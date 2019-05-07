@@ -10,6 +10,7 @@
 
 #define PORT_NUM 1004
 
+int MAXROOM = 0;
 void error(const char *msg)
 {
 	perror(msg);
@@ -19,6 +20,7 @@ void error(const char *msg)
 typedef struct _USR {
 	int clisockfd;		// socket file descriptor
 	char* name;
+	int room;
 	struct _USR* next;	// for linked list queue
 } USR;
 
@@ -89,9 +91,10 @@ void* thread_main(void* args)
 	free(args);
 
 	//-------------------------------
-	// Now, we receive/send messages
+	// Receive name
 	char buffer[512];
 	char name[512];
+	char room[512];
 	int nsen, nrcv;
 
 	memset(buffer, 0, 512);
@@ -108,6 +111,49 @@ void* thread_main(void* args)
 
 	strcpy(name, buffer);
 	cur->name = name;
+	printf("%s has connected\n", name);
+
+	//Send room info
+	memset(buffer, 0, 512);
+	if (MAXROOM == 0){
+		nsen = send(clisockfd, buffer, strlen(buffer), 0);
+		if (nsen < 0) error("ERROR sending empty room info");
+		printf("empty room info's length: %ld\n", strlen(buffer));
+	}
+	else{
+		int rooms[MAXROOM];
+		USR* curt = head;
+		while(curt != NULL){
+			rooms[curt->room - 1] += 1;
+			curt = curt->next;
+		}
+		for(int i = 0; i < MAXROOM; ++i){
+			sprintf(buffer + strlen(buffer), "Room %d: %d people\n", i+1, rooms[i]);
+		}
+		nsen = send(clisockfd, buffer, strlen(buffer), 0);
+		if(nsen < 0) error("Error sending room info");
+	}
+
+	printf("room info sent\n");
+	//Receive room info
+	memset(buffer, 0, 512);
+	memset(room, 0, 512);
+	nrcv = recv(clisockfd, buffer, 512, 0);
+	if (nrcv < 0) error("ERROR server recv() failed at room info");
+
+	strcpy(room, buffer);
+	if (strcmp(room, "new") == 0){
+		MAXROOM++;
+		cur->room = MAXROOM;
+		printf("receive new from client\n");
+	}
+	else{
+		cur->room = atoi(room);
+	}
+	
+
+	printf("%s wants room %s\n", name, room);
+	printf("%s got room %d\n", name, cur->room);
 
 	//start receiving msgs
 	memset(buffer, 0, 512);

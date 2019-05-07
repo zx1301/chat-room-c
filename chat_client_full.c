@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
 	
 	//prompt user for name
 	char buffer[512];
+	char roomreply[512];
 	int n;
 	printf("\nPlease enter your name: ");
 	memset(buffer, 0, 512);
@@ -110,6 +111,25 @@ int main(int argc, char *argv[])
 	n = send(sockfd, buffer, strlen(buffer), 0);
 	if (n < 0) error("ERROR sending name");
 
+	//receive room info
+	memset(buffer, 0, 512);
+	n = recv(sockfd, buffer, 512, 0);
+	if (n < 0) error("receiving room info failed\n");
+	printf("Room info:\n%s\n", buffer);
+
+	//send reply for room info
+	memset(roomreply, 0, 512);
+	if (strlen(buffer) == 0){
+		strcpy(roomreply, "new");
+		n = send(sockfd, roomreply, strlen(roomreply), 0);
+	}
+	else{
+		memset(roomreply, 0, 512);
+		fgets(roomreply, 512, stdin);
+		roomreply[strlen(roomreply) - 1] = '\0';
+		n = send(sockfd, roomreply, strlen(roomreply), 0);
+	}
+	
 	pthread_t tid1;
 	pthread_t tid2;
 
