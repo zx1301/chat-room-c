@@ -18,6 +18,7 @@ void error(const char *msg)
 
 typedef struct _USR {
 	int clisockfd;		// socket file descriptor
+	char* name;
 	struct _USR* next;	// for linked list queue
 } USR;
 
@@ -46,6 +47,14 @@ void broadcast(int fromfd, char* message)
 	socklen_t clen = sizeof(cliaddr);
 	if (getpeername(fromfd, (struct sockaddr*)&cliaddr, &clen) < 0) error("ERROR Unknown sender!");
 
+	//find sender
+	USR* sender = head;
+	while (sender != NULL){
+		if (sender->clisockfd == fromfd) break;
+		sender = sender->next;
+	}
+	if (sender == NULL) error("sender was not found");
+
 	// traverse through all connected clients
 	USR* cur = head;
 	while (cur != NULL) {
@@ -54,12 +63,12 @@ void broadcast(int fromfd, char* message)
 			char buffer[512];
 
 			// prepare message
-			sprintf(buffer, "[%s]:%s", inet_ntoa(cliaddr.sin_addr), message);
+			sprintf(buffer, "[%s]:%s", sender->name, message);
 			int nmsg = strlen(buffer);
 
 			// send!
 			int nsen = send(cur->clisockfd, buffer, nmsg, 0);
-			if (nsen != nmsg) error("ERROR send() failed");
+			if (nsen != nmsg) error("ERROR send() failed at broadcast");
 		}
 
 		cur = cur->next;
@@ -81,18 +90,36 @@ void* thread_main(void* args)
 
 	//-------------------------------
 	// Now, we receive/send messages
-	char buffer[256];
+	char buffer[512];
+	char name[512];
 	int nsen, nrcv;
 
-	nrcv = recv(clisockfd, buffer, 255, 0);
-	if (nrcv < 0) error("ERROR recv() failed");
+	memset(buffer, 0, 512);
+	memset(name, 0, 512);
+	nrcv = recv(clisockfd, buffer, 512, 0);
+	if (nrcv < 0) error("ERROR recv() failed at name");
 
+	USR* cur = head;
+	while(cur != NULL){
+		if(cur->clisockfd == clisockfd) break;
+		cur = cur->next;
+	}
+	if (cur == NULL) error("Error with finding user that needs name");
+
+	strcpy(name, buffer);
+	cur->name = name;
+
+	//start receiving msgs
+	memset(buffer, 0, 512);
+	nrcv = recv(clisockfd, buffer, 512, 0);
+	if (nrcv < 0) error("ERROR recv() failed at msg 1");
 	while (nrcv > 0) {
 		// we send the message to everyone except the sender
 		broadcast(clisockfd, buffer);
 
-		nrcv = recv(clisockfd, buffer, 255, 0);
-		if (nrcv < 0) error("ERROR recv() failed");
+		memset(buffer, 0, 256);
+		nrcv = recv(clisockfd, buffer, 512, 0);
+		if (nrcv < 0) error("ERROR recv() failed at msg");
 	}
 
 	close(clisockfd);

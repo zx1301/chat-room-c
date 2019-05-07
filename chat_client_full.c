@@ -32,15 +32,18 @@ void* thread_main_recv(void* args)
 	char buffer[512];
 	int n;
 
-	//n = recv(sockfd, buffer, 512, 0);
-	while (1) {
+	memset(buffer, 0, 512);
+	n = recv(sockfd, buffer, 512, 0);
+	if (n < 0) error("ERROR client recv() failed 1");
+	while (n > 0) {
+		printf("\n%s\n", buffer);
+
 		memset(buffer, 0, 512);
 		n = recv(sockfd, buffer, 512, 0);
-		if (n < 0) error("ERROR recv() failed");
+		if (n < 0) error("ERROR client recv() failed");
 		
 		//if (strlen(buffer) == 1) buffer[0] = '\0';
 
-		printf("\n%s\n", buffer);
 	}
 
 	return NULL;
@@ -60,7 +63,7 @@ void* thread_main_send(void* args)
 	while (1) {
 		// You will need a bit of control on your terminal
 		// console or GUI to have a nice input window.
-		//printf("\nPlease enter the message: ");
+		printf("\nPlease enter the message: ");
 		memset(buffer, 0, 512);
 		fgets(buffer, 512, stdin);
 
@@ -77,7 +80,7 @@ void* thread_main_send(void* args)
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2) error("Please speicify hostname");
+	if (argc < 2) error("Please specify hostname");
 
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) error("ERROR opening socket");
@@ -94,6 +97,18 @@ int main(int argc, char *argv[])
 	int status = connect(sockfd, 
 			(struct sockaddr *) &serv_addr, slen);
 	if (status < 0) error("ERROR connecting");
+	
+	//prompt user for name
+	char buffer[512];
+	int n;
+	printf("\nPlease enter your name: ");
+	memset(buffer, 0, 512);
+	fgets(buffer, 512, stdin);
+	buffer[strlen(buffer) - 1] = '\0';
+
+	//send name
+	n = send(sockfd, buffer, strlen(buffer), 0);
+	if (n < 0) error("ERROR sending name");
 
 	pthread_t tid1;
 	pthread_t tid2;
