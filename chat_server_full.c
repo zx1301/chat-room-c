@@ -115,10 +115,11 @@ void* thread_main(void* args)
 
 	//Send room info
 	memset(buffer, 0, 512);
+	buffer[0] = 'x';
 	if (MAXROOM == 0){
 		nsen = send(clisockfd, buffer, strlen(buffer), 0);
 		if (nsen < 0) error("ERROR sending empty room info");
-		printf("empty room info's length: %ld\n", strlen(buffer));
+		//printf("empty room info's length: %ld\n", strlen(buffer));
 	}
 	else{
 		int rooms[MAXROOM];
@@ -134,7 +135,7 @@ void* thread_main(void* args)
 		if(nsen < 0) error("Error sending room info");
 	}
 
-	printf("room info sent\n");
+//	printf("room info sent\n");
 	//Receive room info
 	memset(buffer, 0, 512);
 	memset(room, 0, 512);
@@ -145,7 +146,7 @@ void* thread_main(void* args)
 	if (strcmp(room, "new") == 0){
 		MAXROOM++;
 		cur->room = MAXROOM;
-		printf("receive new from client\n");
+//		printf("receive new from client\n");
 	}
 	else{
 		cur->room = atoi(room);

@@ -119,12 +119,15 @@ int main(int argc, char *argv[])
 
 	//send reply for room info
 	memset(roomreply, 0, 512);
-	if (strlen(buffer) == 0){
+	if (strcmp(buffer, "x") == 0){
 		strcpy(roomreply, "new");
 		n = send(sockfd, roomreply, strlen(roomreply), 0);
+		printf("First client, room #1 being created\n");
 	}
 	else{
+
 		memset(roomreply, 0, 512);
+		printf("Please enter a number for an existing room,\n a room number not yet made for random join,\n or 'new' for a new room");
 		fgets(roomreply, 512, stdin);
 		roomreply[strlen(roomreply) - 1] = '\0';
 		n = send(sockfd, roomreply, strlen(roomreply), 0);
