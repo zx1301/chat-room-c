@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <time.h>
 
 #define PORT_NUM 1004
 
@@ -102,6 +103,7 @@ void* thread_main(void* args)
 	nrcv = recv(clisockfd, buffer, 512, 0);
 	if (nrcv < 0) error("ERROR recv() failed at name");
 
+	//finding given USR in linked list
 	USR* cur = head;
 	while(cur != NULL){
 		if(cur->clisockfd == clisockfd) break;
@@ -130,7 +132,10 @@ void* thread_main(void* args)
 		}
 		USR* curt = head;
 		while(curt != NULL){
-		//	if (curt->room == -1) continue;
+			if (curt->room == -1){
+				curt = curt->next;
+				continue;
+			}
 			rooms[curt->room - 1]++;
 			curt = curt->next;
 		}
@@ -149,11 +154,23 @@ void* thread_main(void* args)
 	if (nrcv < 0) error("ERROR server recv() failed at room info");
 
 	strcpy(room, buffer);
+	//client creates and joins a new room
 	if (strcmp(room, "new") == 0){
 		MAXROOM++;
 		cur->room = MAXROOM;
 //		printf("receive new from client\n");
 	}
+	//client joins random existing room
+	else if(atoi(room) > MAXROOM){
+		srand(time(0));
+		int randnum = rand();
+		randnum = randnum % MAXROOM;
+		if (randnum == 0){
+			randnum = 1;
+		}
+		cur->room = randnum;
+	}
+	//Client joins desired existing room
 	else{
 		cur->room = atoi(room);
 	}
@@ -174,7 +191,8 @@ void* thread_main(void* args)
 		if (nrcv < 0) error("ERROR recv() failed at msg");
 	}
 	
-	//cur->room = -1;
+	//disconnected user is not in a room
+	cur->room = -1;
 
 	close(clisockfd);
 	//-------------------------------
@@ -200,7 +218,7 @@ int main(int argc, char *argv[])
 			(struct sockaddr*) &serv_addr, slen);
 	if (status < 0) error("ERROR on binding");
 
-	listen(sockfd, 5); // maximum number of connections = 5
+	listen(sockfd, 10); // maximum number of connections = 10
 
 	while(1) {
 		struct sockaddr_in cli_addr;
