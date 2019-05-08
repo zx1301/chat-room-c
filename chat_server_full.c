@@ -125,10 +125,13 @@ void* thread_main(void* args)
 		memset(buffer, 0, 512);
 		int rooms[MAXROOM];
 		int i;
-		memset(rooms, 0, MAXROOM * sizeof(int));
+		for(i = 0; i < MAXROOM; ++i){
+			rooms[i] = 0;
+		}
 		USR* curt = head;
 		while(curt != NULL){
-			rooms[curt->room - 1] = rooms[cur->room - 1] + 1;
+		//	if (curt->room == -1) continue;
+			rooms[curt->room - 1]++;
 			curt = curt->next;
 		}
 		for(i = 0; i < MAXROOM; ++i){
@@ -155,7 +158,6 @@ void* thread_main(void* args)
 		cur->room = atoi(room);
 	}
 	
-
 	printf("%s wants room %s\n", name, room);
 	printf("%s got room %d\n", name, cur->room);
 
@@ -171,10 +173,12 @@ void* thread_main(void* args)
 		nrcv = recv(clisockfd, buffer, 512, 0);
 		if (nrcv < 0) error("ERROR recv() failed at msg");
 	}
+	
+	//cur->room = -1;
 
 	close(clisockfd);
 	//-------------------------------
-	printf("%s has disconnected", name);
+	printf("%s has disconnected\n", name);
 
 	return NULL;
 }
