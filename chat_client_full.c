@@ -115,7 +115,8 @@ int main(int argc, char *argv[])
 	memset(buffer, 0, 512);
 	n = recv(sockfd, buffer, 512, 0);
 	if (n < 0) error("receiving room info failed\n");
-	printf("Room info:\n%s\n", buffer);
+	//printf("received room info's length %ld\n", strlen(buffer));
+	if (strcmp(buffer, "x") != 0) printf("Room info:\n%s\n", buffer);
 
 	//send reply for room info
 	memset(roomreply, 0, 512);
@@ -127,10 +128,11 @@ int main(int argc, char *argv[])
 	else{
 
 		memset(roomreply, 0, 512);
-		printf("Please enter a number for an existing room,\n a room number not yet made for random join,\n or 'new' for a new room");
+		printf("Please enter a number for an existing room,\n a room number not yet made for random join,\n or 'new' for a new room:\n");
 		fgets(roomreply, 512, stdin);
 		roomreply[strlen(roomreply) - 1] = '\0';
 		n = send(sockfd, roomreply, strlen(roomreply), 0);
+		printf("Joining room\n");
 	}
 	
 	pthread_t tid1;

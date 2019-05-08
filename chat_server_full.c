@@ -61,7 +61,7 @@ void broadcast(int fromfd, char* message)
 	USR* cur = head;
 	while (cur != NULL) {
 		// check if cur is not the one who sent the message
-		if (cur->clisockfd != fromfd) {
+		if (cur->clisockfd != fromfd && sender->room == cur->room) {
 			char buffer[512];
 
 			// prepare message
@@ -122,13 +122,16 @@ void* thread_main(void* args)
 		//printf("empty room info's length: %ld\n", strlen(buffer));
 	}
 	else{
+		memset(buffer, 0, 512);
 		int rooms[MAXROOM];
+		int i;
+		memset(rooms, 0, MAXROOM * sizeof(int));
 		USR* curt = head;
 		while(curt != NULL){
-			rooms[curt->room - 1] += 1;
+			rooms[curt->room - 1] = rooms[cur->room - 1] + 1;
 			curt = curt->next;
 		}
-		for(int i = 0; i < MAXROOM; ++i){
+		for(i = 0; i < MAXROOM; ++i){
 			sprintf(buffer + strlen(buffer), "Room %d: %d people\n", i+1, rooms[i]);
 		}
 		nsen = send(clisockfd, buffer, strlen(buffer), 0);
@@ -164,13 +167,14 @@ void* thread_main(void* args)
 		// we send the message to everyone except the sender
 		broadcast(clisockfd, buffer);
 
-		memset(buffer, 0, 256);
+		memset(buffer, 0, 512);
 		nrcv = recv(clisockfd, buffer, 512, 0);
 		if (nrcv < 0) error("ERROR recv() failed at msg");
 	}
 
 	close(clisockfd);
 	//-------------------------------
+	printf("%s has disconnected", name);
 
 	return NULL;
 }
